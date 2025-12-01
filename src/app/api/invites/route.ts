@@ -73,11 +73,7 @@ export async function GET(req: Request) {
         }
 
         const invite = await prisma.inviteToken.findUnique({
-            where: { token },
-            include: {
-                // Note: We can't directly join to Organization here since there's no FK
-                // We'll fetch it separately if needed
-            }
+            where: { token }
         })
 
         if (!invite) {
