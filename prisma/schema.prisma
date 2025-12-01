@@ -138,6 +138,7 @@ model User {
   title          Title?
   position       String?      // e.g., Elder, Deacon, CEL
   phone          String?
+  address        String?
 
   // Relations
   staffProfile   Staff?
