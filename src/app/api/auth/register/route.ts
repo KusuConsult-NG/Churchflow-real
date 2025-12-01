@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
+import { UserRole } from "@prisma/client"
 
 export async function POST(req: Request) {
     try {
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
                     name: invite.name,
                     email: invite.email,
                     password: hashedPassword,
-                    role: invite.role,
+                    role: invite.role as UserRole,
                     organizationId: invite.organizationId,
                     position: "Administrator"
                 }
