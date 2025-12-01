@@ -1,60 +1,114 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/database'
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-export async function GET(request: NextRequest) {
-  try {
-    const organizations = await db.getOrganizations()
-    
-    return NextResponse.json({
-      success: true,
-      data: organizations
-    })
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url)
+    const type = searchParams.get("type")
+    const hierarchy = searchParams.get("hierarchy") === "true"
 
-  } catch (error) {
-    console.error('Get organizations error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    try {
+        let where: any = {}
+        if (type) where.type = type
+
+        if (hierarchy) {
+            // Fetch only top-level orgs (HQ) and include children recursively
+            // Note: Prisma doesn't support infinite recursion easily, so we fetch all and build tree client-side
+            // OR we fetch top level and their immediate children.
+            // For now, let's fetch all with parentId to build tree client-side.
+            const organizations = await prisma.organization.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    type: true,
+                    parentId: true,
+                    _count: {
+                        select: { children: true, staff: true, users: true }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'asc'
+                }
+            })
+            return NextResponse.json(organizations)
+        }
+
+        const organizations = await prisma.organization.findMany({
+            where,
+            select: { id: true, name: true, code: true, type: true, parentId: true }
+        })
+        return NextResponse.json(organizations)
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to fetch organizations" }, { status: 500 })
+    }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const organizationData = await request.json()
+export async function POST(req: Request) {
+    try {
+        const body = await req.json()
+        const {
+            orgName, orgType, orgCode, orgAddress, orgEmail, parentId,
+            adminName, adminEmail
+        } = body
 
-    const { name, type, parentId, address, phone, email, secretaryName, secretaryEmail, secretaryPhone } = organizationData
+        // Check if email exists
+        const existingUser = await prisma.user.findUnique({
+            where: { email: adminEmail }
+        })
 
-    if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Name and type are required' },
-        { status: 400 }
-      )
+        if (existingUser) {
+            return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+        }
+
+        // Determine Role based on Org Type
+        let role = "ADMIN"
+        if (orgType === "HQ") role = "SUPER_ADMIN"
+        if (orgType === "LC") role = "SENIOR_MINISTER"
+
+        // Create Organization only
+        const org = await prisma.organization.create({
+            data: {
+                name: orgName,
+                type: orgType,
+                code: orgCode,
+                address: orgAddress,
+                email: orgEmail,
+                parentId: parentId || null
+            }
+        })
+
+        // Send invite to admin
+        const inviteResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/invites`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: adminEmail,
+                name: adminName,
+                organizationId: org.id,
+                organizationName: orgName,
+                role
+            })
+        })
+
+        if (!inviteResponse.ok) {
+            // If invite fails, we could optionally delete the org
+            // For now, just return error but keep org
+            const error = await inviteResponse.json()
+            return NextResponse.json({
+                org,
+                warning: "Organization created but invite failed to send",
+                error: error.error
+            }, { status: 207 }) // 207 Multi-Status
+        }
+
+        return NextResponse.json({
+            success: true,
+            org,
+            message: `Organization created successfully. Invite sent to ${adminEmail}`
+        })
+    } catch (error: any) {
+        console.error("Org Creation Error:", error)
+        return NextResponse.json({ error: error.message || "Failed to create organization" }, { status: 500 })
     }
-
-    const organization = await db.createOrganization({
-      name,
-      type: type as any,
-      parentId,
-      address,
-      phone,
-      email,
-      secretaryName,
-      secretaryEmail,
-      secretaryPhone,
-      isActive: true
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: organization
-    })
-
-  } catch (error) {
-    console.error('Create organization error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
 }

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/components/Providers";
+import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ChurchFlow - Financial Management System",
-  description: "Comprehensive financial and organizational management system for churches",
+  title: "ChurchFlow",
+  description: "Financial and HR Management System for ECWA",
 };
 
 export default function RootLayout({
@@ -18,9 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

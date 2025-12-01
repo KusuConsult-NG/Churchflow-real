@@ -1,74 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/database'
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
-export async function GET(request: NextRequest) {
-  try {
-    const staff = await db.getStaff()
-    
-    return NextResponse.json({
-      success: true,
-      data: staff
-    })
-
-  } catch (error) {
-    console.error('Get staff error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const staffData = await request.json()
-
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      phone, 
-      role, 
-      department, 
-      employmentType, 
-      startDate, 
-      salary, 
-      allowances, 
-      organizationId 
-    } = staffData
-
-    if (!firstName || !lastName || !email || !phone || !role || !organizationId) {
-      return NextResponse.json(
-        { error: 'Required fields are missing' },
-        { status: 400 }
-      )
+export async function GET(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const staff = await db.createStaff({
-      firstName,
-      lastName,
-      email,
-      phone,
-      role,
-      department: department || 'General',
-      employmentType: employmentType as any || 'permanent',
-      startDate: new Date(startDate),
-      salary: parseFloat(salary) || 0,
-      allowances: allowances || [],
-      organizationId,
-      isActive: true
-    })
+    const { searchParams } = new URL(req.url)
+    const orgId = searchParams.get("orgId") || session.user.organizationId
 
-    return NextResponse.json({
-      success: true,
-      data: staff
-    })
+    try {
+        const staff = await prisma.staff.findMany({
+            where: { organizationId: orgId || undefined },
+            include: {
+                user: { select: { name: true, email: true, phone: true, title: true } },
+                department: { select: { name: true } }
+            },
+            orderBy: { hireDate: 'desc' }
+        })
 
-  } catch (error) {
-    console.error('Create staff error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+        return NextResponse.json(staff)
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to fetch staff" }, { status: 500 })
+    }
+}
+
+export async function POST(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const body = await req.json()
+        const { userId, departmentId, staffId, hireDate, contractType, baseSalary, bankName, accountNumber } = body
+
+        if (!session.user.organizationId) {
+            return NextResponse.json({ error: "User not linked to organization" }, { status: 400 })
+        }
+
+        const staff = await prisma.staff.create({
+            data: {
+                userId,
+                organizationId: session.user.organizationId,
+                departmentId: departmentId || null,
+                staffId,
+                hireDate: new Date(hireDate),
+                contractType,
+                baseSalary: parseFloat(baseSalary),
+                bankName,
+                accountNumber
+            },
+            include: {
+                user: { select: { name: true, email: true } }
+            }
+        })
+
+        return NextResponse.json(staff)
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || "Failed to create staff" }, { status: 500 })
+    }
 }

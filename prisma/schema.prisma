@@ -1,0 +1,408 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum OrganizationType {
+  HQ
+  GCC
+  DCC
+  LCC
+  LC
+  AGENCY // Men, Women, Youth, Choir, etc.
+  DEPARTMENT // For internal departments like Finance, HR
+}
+
+enum UserRole {
+  SUPER_ADMIN // System Admin
+  ADMIN // General Admin
+  EXECUTIVE_SECRETARY // Strategic Oversight (DCC/GCC)
+  SENIOR_MINISTER // Approver (LC)
+  MINISTER // Pastoral Team
+  SECRETARY // Reviewer
+  FINANCIAL_SECRETARY // Initiator (Finance)
+  TREASURER // Payer
+  ACCOUNTANT // Record Keeper
+  AUDITOR // View Only
+  BANK_OPERATOR // Gowans Bank View
+  STAFF // Employee
+  MEMBER // Regular Member
+  LEADER // Elder, Deacon, etc.
+}
+
+enum Title {
+  MR
+  MRS
+  MISS
+  REV
+  PST
+  DR
+  PROF
+  ENGR
+  BARR
+}
+
+enum TransactionType {
+  INCOME
+  EXPENDITURE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHECK
+  ONLINE
+}
+
+enum ApprovalStatus {
+  PENDING
+  REVIEWED // By Secretary
+  APPROVED // By Minister/Chairman
+  REJECTED
+  PAID // By Treasurer
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum QueryStatus {
+  ISSUED
+  RESPONDED
+  RESOLVED
+}
+
+// --- Organization & Users ---
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  type      OrganizationType
+  code      String?          @unique // e.g., DCC-001
+  address   String?
+  phone     String?
+  email     String?
+  
+  // Hierarchy
+  parentId  String?
+  parent    Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children  Organization[] @relation("OrgHierarchy")
+
+  // Relations
+  users     User[]
+  accounts  Account[]
+  staff     Staff[]
+  departments Department[]
+  expenditureRequests ExpenditureRequest[]
+  campaigns         Campaign[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id             String       @id @default(cuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  staff          Staff[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  email          String       @unique
+  password       String?      // Nullable for Google Auth
+  image          String?
+  role           UserRole     @default(MEMBER)
+  
+  // Organization Link
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  // Profile Details
+  title          Title?
+  position       String?      // e.g., Elder, Deacon, CEL
+  phone          String?
+
+  // Relations
+  staffProfile   Staff?
+  expenditureRequests ExpenditureRequest[] @relation("RequestedExpenditures")
+  createdCampaigns Campaign[]
+  
+  // Audits
+  actions        AuditLog[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// --- HR Module ---
+
+model Staff {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id])
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  departmentId   String?
+  department     Department?  @relation(fields: [departmentId], references: [id])
+
+  // Employment Details
+  staffId        String       @unique
+  hireDate       DateTime
+  contractType   String       // Permanent, Temporary, Volunteer
+  
+  // Financials
+  baseSalary     Float        @default(0)
+  bankName       String?
+  accountNumber  String?
+  
+  // Relations
+  payrolls       Payroll[]
+  leaves         LeaveRequest[]
+  queries        Query[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Payroll {
+  id             String       @id @default(cuid())
+  staffId        String
+  staff          Staff        @relation(fields: [staffId], references: [id])
+  
+  month          DateTime     // First day of the month
+  basicSalary    Float
+  allowances     Float        @default(0)
+  deductions     Float        @default(0)
+  netSalary      Float
+  
+  status         ApprovalStatus @default(PENDING)
+  paymentDate    DateTime?
+  
+  // Link to Expenditure
+  expenditureId  String?      @unique
+  expenditure    ExpenditureRequest? @relation(fields: [expenditureId], references: [id])
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model LeaveRequest {
+  id             String       @id @default(cuid())
+  staffId        String
+  staff          Staff        @relation(fields: [staffId], references: [id])
+  
+  type           String       // Annual, Sick, Casual
+  startDate      DateTime
+  endDate        DateTime
+  reason         String
+  
+  status         LeaveStatus  @default(PENDING)
+  approvedBy     String?      // User ID of approver
+  rejectionReason String?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Query {
+  id             String       @id @default(cuid())
+  staffId        String
+  staff          Staff        @relation(fields: [staffId], references: [id])
+  
+  title          String
+  description    String
+  issuedBy       String       // User ID
+  issuedAt       DateTime     @default(now())
+  
+  response       String?
+  respondedAt    DateTime?
+  
+  status         QueryStatus  @default(ISSUED)
+  resolution     String?
+  
+  updatedAt      DateTime     @updatedAt
+}
+
+// --- Finance Module ---
+
+model Account {
+  id             String       @id @default(cuid())
+  name           String       // e.g., General Fund, Building Project
+  accountNumber  String?      // Bank Account Number
+  bankName       String?
+  balance        Float        @default(0)
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  transactions   Transaction[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Transaction {
+  id             String       @id @default(cuid())
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  
+  type           TransactionType
+  amount         Float
+  date           DateTime     @default(now())
+  description    String
+  category       String       // Tithe, Offering, Salary, Maintenance
+  
+  // Income Specific
+  source         String?      // Giver Name
+  
+  // Expenditure Specific
+  beneficiary    String?
+  
+  paymentMethod  PaymentMethod
+  reference      String?      // Check number, Bank ref
+  
+  // Link to Request
+  requestId      String?      @unique
+  request        ExpenditureRequest? @relation(fields: [requestId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ExpenditureRequest {
+  id             String       @id @default(cuid())
+  amount         Float
+  description    String
+  category       String
+  
+  // Beneficiary Details
+  beneficiary    String
+  bankName       String?
+  accountNumber  String?
+  
+  // Requester
+  requesterId    String
+  requester      User         @relation("RequestedExpenditures", fields: [requesterId], references: [id])
+  
+  // Organization
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  status         ApprovalStatus @default(PENDING)
+  
+  // Approval Workflow
+  reviewedBy     String?      // Secretary
+  reviewedAt     DateTime?
+  
+  approvedBy     String?      // Minister/Chairman
+  approvedAt     DateTime?
+  
+  paidBy         String?      // Treasurer
+  paidAt         DateTime?
+  
+  rejectionReason String?
+  
+  // Links
+  transaction    Transaction?
+  payroll        Payroll?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// --- Audit & System ---
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  
+  action         String       // LOGIN, CREATE_ORG, APPROVE_EXPENSE
+  entityType     String       // User, Transaction, Organization
+  entityId       String
+  details        String?      // JSON string of changes
+  
+  ipAddress      String?
+  userAgent      String?
+  
+  createdAt      DateTime     @default(now())
+}
+
+// --- Crowdfunding Module ---
+
+model Campaign {
+  id             String       @id @default(cuid())
+  title          String
+  description    String
+  goalAmount     Float
+  currentAmount  Float        @default(0)
+  startDate      DateTime     @default(now())
+  endDate        DateTime?
+  
+  status         String       @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  creatorId      String
+  creator        User         @relation(fields: [creatorId], references: [id])
+  
+  donations      Donation[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Donation {
+  id             String       @id @default(cuid())
+  amount         Float
+  donorName      String?      // Optional for anonymous
+  donorEmail     String?
+  message        String?
+  
+  campaignId     String
+  campaign       Campaign     @relation(fields: [campaignId], references: [id])
+  
+  paymentMethod  PaymentMethod
+  reference      String?
+  status         String       @default("COMPLETED")
+  
+  createdAt      DateTime     @default(now())
+}
+
+// --- Invite System ---
+
+model InviteToken {
+  id             String       @id @default(cuid())
+  token          String       @unique
+  email          String
+  name           String       // Admin name from org creation
+  organizationId String
+  role           String       @default("ADMIN") // Role to assign after registration
+  expiresAt      DateTime
+  used           Boolean      @default(false)
+  usedAt         DateTime?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
