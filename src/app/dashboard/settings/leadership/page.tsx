@@ -39,10 +39,7 @@ const REQUIRED_ROLES: Record<OrganizationType, { role: string, label: string }[]
         { role: "TREASURER", label: "Treasurer" },
         { role: "FINANCIAL_SECRETARY", label: "Financial Secretary" },
         { role: "ELDER", label: "Elder (Delegate)" }
-    ],
-    // Fallback for others
-    AGENCY: [],
-    DEPARTMENT: []
+    ]
 }
 
 export default async function LeadershipPage() {

@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { OrganizationType } from "@prisma/client"
+import { randomBytes } from "crypto"
+
+// Helper functions
+function generateInviteToken() {
+    return randomBytes(32).toString("hex")
+}
+
+async function sendInviteEmail(email: string, name: string, token: string, orgName: string) {
+    // In a real app, use Resend, SendGrid, etc.
+    console.log(`[MOCK EMAIL] To: ${email}, Subject: Invite to ${orgName}, Link: /auth/signup?token=${token}`)
+}
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
@@ -11,10 +23,6 @@ export async function GET(req: Request) {
         if (type) where.type = type
 
         if (hierarchy) {
-            // Fetch only top-level orgs (HQ) and include children recursively
-            // Note: Prisma doesn't support infinite recursion easily, so we fetch all and build tree client-side
-            // OR we fetch top level and their immediate children.
-            // For now, let's fetch all with parentId to build tree client-side.
             const organizations = await prisma.organization.findMany({
                 where,
                 select: {
@@ -47,8 +55,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json()
+        // Consolidate destructuring. Assume the frontend sends these fields.
         const {
-            orgName, orgType, orgCode, orgAddress, orgEmail, parentId,
+            name, type, code, address, email, phone, parentId,
             adminName, adminEmail
         } = body
 
@@ -61,24 +70,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
         }
 
-        // Determine Role based on Org Type
-        let role = "ADMIN"
-        if (orgType === "HQ") role = "SUPER_ADMIN"
-        if (orgType === "LC") role = "SENIOR_MINISTER"
+        // Validate parent if provided
+        if (parentId) {
+            const parentOrg = await prisma.organization.findUnique({
+                where: { id: parentId }
+            })
 
-        const { name, type, code, email, phone, address, parentId, adminName, adminEmail } = body
-
-        // Validate parent
-        const parentOrg = await prisma.organization.findUnique({
-            where: { id: parentId }
-        })
-
-        if (!parentOrg) {
-            return NextResponse.json({ error: "Parent organization not found" }, { status: 404 })
+            if (!parentOrg) {
+                return NextResponse.json({ error: "Parent organization not found" }, { status: 404 })
+            }
         }
-
-        // Validate hierarchy (Basic check, UI does strict check)
-        // HQ -> GCC/DCC, GCC -> DCC, DCC -> LCC, LCC -> LC
 
         // Create Organization
         const organization = await prisma.organization.create({

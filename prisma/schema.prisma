@@ -289,6 +289,8 @@ model Transaction {
   // New Fields
   source    String? // Giver's Name
   narration String? // Specific details
+  paymentMethod PaymentMethod @default(CASH)
+  reference     String?
 
   date DateTime @default(now())
 

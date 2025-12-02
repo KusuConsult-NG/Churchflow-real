@@ -53,7 +53,7 @@ export async function POST(req: Request) {
                 amount: parseFloat(amount),
                 description,
                 category,
-                beneficiary,
+                beneficiaryName: beneficiary,
                 bankName,
                 accountNumber,
                 requesterId: session.user.id,
