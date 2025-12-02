@@ -34,3 +34,9 @@
 - Root cause: Same persistent type mismatch
 - Resolution: Applied `as any` type assertion to `src/app/api/finance/income/route.ts`
 - Result: Build succeeded consistently
+
+### Fix #6: Invites Route Type Assertion (11:05 AM)
+- Build error: `position` missing in `InviteTokenCreateInput`
+- Root cause: Same persistent type mismatch
+- Resolution: Applied `as any` type assertion to `src/app/api/invites/route.ts`
+- Result: Build succeeded consistently
