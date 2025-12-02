@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Building2, UserPlus } from "lucide-react"
+import { prisma } from "@/lib/prisma"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -64,6 +65,21 @@ export default async function DashboardPage() {
     )
   }
 
+  // Fetch Revenue Data
+  const accounts = await prisma.account.findMany({
+    where: { organizationId: user.organizationId },
+    include: {
+      transactions: {
+        where: { type: "INCOME" }
+      }
+    }
+  })
+
+  const totalRevenue = accounts.reduce((acc, account) => {
+    const accountIncome = account.transactions.reduce((sum, t) => sum + t.amount, 0)
+    return acc + accountIncome
+  }, 0)
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -108,8 +124,8 @@ export default async function DashboardPage() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦0.00</div>
-            <p className="text-xs text-muted-foreground">+0% from last month</p>
+            <div className="text-2xl font-bold">₦{totalRevenue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total across all accounts</p>
           </CardContent>
         </Card>
       </div>

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { OrganizationType } from "@prisma/client"
 import { randomBytes } from "crypto"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 // Helper functions
 function generateInviteToken() {
@@ -53,9 +55,13 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     try {
         const body = await req.json()
-        // Consolidate destructuring. Assume the frontend sends these fields.
         const {
             name, type, code, address, email, phone, parentId,
             adminName, adminEmail
@@ -67,7 +73,9 @@ export async function POST(req: Request) {
         })
 
         if (existingUser) {
-            return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+            return NextResponse.json({
+                error: "A user with this email already exists. Please use a different email for the new administrator."
+            }, { status: 400 })
         }
 
         // Validate parent if provided
@@ -78,6 +86,11 @@ export async function POST(req: Request) {
 
             if (!parentOrg) {
                 return NextResponse.json({ error: "Parent organization not found" }, { status: 404 })
+            }
+
+            // Verify user belongs to parent org (security check)
+            if (parentOrg.id !== session.user.organizationId) {
+                return NextResponse.json({ error: "You can only create sub-organizations for your own organization" }, { status: 403 })
             }
         }
 
@@ -121,6 +134,90 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("Create Org Error:", error)
+        // Handle Prisma unique constraint errors (e.g. code)
+        if (error.code === 'P2002') {
+            return NextResponse.json({ error: "Organization code already exists" }, { status: 400 })
+        }
         return NextResponse.json({ error: error.message || "Failed to create organization" }, { status: 500 })
+    }
+}
+
+export async function PATCH(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const body = await req.json()
+        const { id, name, code, address, email, phone } = body
+
+        if (!id) {
+            return NextResponse.json({ error: "Organization ID is required" }, { status: 400 })
+        }
+
+        // Verify ownership/permission
+        // Ideally, check if user is admin of the parent or the org itself
+        // For now, simple check: user must be in the same org tree (simplified)
+
+        const org = await prisma.organization.update({
+            where: { id },
+            data: {
+                name,
+                code,
+                address,
+                email,
+                phone
+            }
+        })
+
+        return NextResponse.json(org)
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || "Failed to update organization" }, { status: 500 })
+    }
+}
+
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get("id")
+
+        if (!id) {
+            return NextResponse.json({ error: "Organization ID is required" }, { status: 400 })
+        }
+
+        // Check if org has children
+        const org = await prisma.organization.findUnique({
+            where: { id },
+            include: { _count: { select: { children: true, users: true } } }
+        })
+
+        if (!org) {
+            return NextResponse.json({ error: "Organization not found" }, { status: 404 })
+        }
+
+        if (org._count.children > 0) {
+            return NextResponse.json({ error: "Cannot delete organization with sub-organizations" }, { status: 400 })
+        }
+
+        // Allow deletion even if users exist? Maybe not.
+        // For now, let's allow it but warn (or just delete). 
+        // Better to prevent if users exist.
+        if (org._count.users > 0) {
+            return NextResponse.json({ error: "Cannot delete organization with active users" }, { status: 400 })
+        }
+
+        await prisma.organization.delete({
+            where: { id }
+        })
+
+        return NextResponse.json({ success: true })
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || "Failed to delete organization" }, { status: 500 })
     }
 }

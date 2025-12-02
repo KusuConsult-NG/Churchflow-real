@@ -82,6 +82,47 @@ export default function OrganizationTree() {
         setIsAddModalOpen(true)
     }
 
+    const handleEdit = async (org: Organization) => {
+        const newName = prompt("Enter new organization name:", org.name)
+        if (!newName || newName === org.name) return
+
+        try {
+            const res = await fetch("/api/organizations", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: org.id, name: newName })
+            })
+
+            if (res.ok) {
+                fetchOrganizations()
+            } else {
+                alert("Failed to update organization")
+            }
+        } catch (error) {
+            console.error("Update failed", error)
+        }
+    }
+
+    const handleDelete = async (org: Organization) => {
+        if (!confirm(`Are you sure you want to delete ${org.name}? This action cannot be undone.`)) return
+
+        try {
+            const res = await fetch(`/api/organizations?id=${org.id}`, {
+                method: "DELETE"
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                fetchOrganizations()
+            } else {
+                alert(data.error || "Failed to delete organization")
+            }
+        } catch (error) {
+            console.error("Delete failed", error)
+        }
+    }
+
     if (loading) return <div>Loading hierarchy...</div>
 
     return (
@@ -101,7 +142,13 @@ export default function OrganizationTree() {
                 ) : (
                     <div className="space-y-2">
                         {organizations.map((org) => (
-                            <TreeNode key={org.id} node={org} onAddSubOrg={handleAddSubOrg} />
+                            <TreeNode
+                                key={org.id}
+                                node={org}
+                                onAddSubOrg={handleAddSubOrg}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
                         ))}
                     </div>
                 )}
@@ -117,7 +164,17 @@ export default function OrganizationTree() {
     )
 }
 
-function TreeNode({ node, onAddSubOrg }: { node: Organization, onAddSubOrg: (org: Organization) => void }) {
+function TreeNode({
+    node,
+    onAddSubOrg,
+    onEdit,
+    onDelete
+}: {
+    node: Organization,
+    onAddSubOrg: (org: Organization) => void,
+    onEdit: (org: Organization) => void,
+    onDelete: (org: Organization) => void
+}) {
     const [isExpanded, setIsExpanded] = useState(true)
     const hasChildren = node.children && node.children.length > 0
 
@@ -162,10 +219,10 @@ function TreeNode({ node, onAddSubOrg }: { node: Organization, onAddSubOrg: (org
                             <DropdownMenuItem onClick={() => onAddSubOrg(node)}>
                                 <Plus className="w-4 h-4 mr-2" /> Add Sub-Organization
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEdit(node)}>
                                 <Edit className="w-4 h-4 mr-2" /> Edit Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem className="text-red-600" onClick={() => onDelete(node)}>
                                 <Trash className="w-4 h-4 mr-2" /> Delete
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -176,7 +233,13 @@ function TreeNode({ node, onAddSubOrg }: { node: Organization, onAddSubOrg: (org
             {isExpanded && hasChildren && (
                 <div className="ml-4 border-l border-gray-200 pl-2">
                     {node.children!.map((child) => (
-                        <TreeNode key={child.id} node={child} onAddSubOrg={onAddSubOrg} />
+                        <TreeNode
+                            key={child.id}
+                            node={child}
+                            onAddSubOrg={onAddSubOrg}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                        />
                     ))}
                 </div>
             )}

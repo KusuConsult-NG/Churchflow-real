@@ -36,18 +36,21 @@ export default function AddOrganizationModal({ isOpen, onClose, onSuccess, paren
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    orgName: formData.name,
-                    orgType: formData.type,
-                    orgCode: formData.code,
-                    orgEmail: formData.email,
+                    name: formData.name,
+                    type: formData.type,
+                    code: formData.code,
+                    email: formData.email,
                     parentId: parentOrg?.id,
                     adminName: formData.adminName,
-                    adminEmail: formData.adminEmail,
-                    adminPassword: formData.adminPassword
+                    adminEmail: formData.adminEmail
                 })
             })
 
-            if (!res.ok) throw new Error("Failed to create organization")
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to create organization")
+            }
 
             onSuccess()
             onClose()
@@ -55,9 +58,9 @@ export default function AddOrganizationModal({ isOpen, onClose, onSuccess, paren
                 name: "", type: "", code: "", email: "",
                 adminName: "", adminEmail: "", adminPassword: "password123"
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            alert("Failed to create organization")
+            alert(error.message)
         } finally {
             setLoading(false)
         }
