@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, DollarSign, CheckCircle, Clock, Download } from "lucide-react"
+import { Plus, DollarSign, CheckCircle, Clock, Download, Loader2, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const STATUS_CONFIG = {
     PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Pending", icon: Clock },
@@ -14,6 +15,7 @@ export default function PayrollTab() {
     const [payrolls, setPayrolls] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
+    const [generating, setGenerating] = useState(false)
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
     useEffect(() => {
@@ -24,40 +26,54 @@ export default function PayrollTab() {
         fetch("/api/hr/payroll")
             .then(res => res.json())
             .then(data => {
-                setPayrolls(data)
+                if (Array.isArray(data)) {
+                    setPayrolls(data)
+                }
                 setLoading(false)
             })
+            .catch(() => setLoading(false))
     }
 
     const handleGenerate = async () => {
-        const res = await fetch("/api/hr/payroll", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ month: selectedMonth + "-01" })
-        })
+        setGenerating(true)
+        try {
+            const res = await fetch("/api/hr/payroll", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ month: selectedMonth + "-01" })
+            })
 
-        if (res.ok) {
-            setShowForm(false)
-            fetchPayrolls()
+            if (res.ok) {
+                setShowForm(false)
+                fetchPayrolls()
+            }
+        } catch (error) {
+            console.error("Failed to generate payroll", error)
+        } finally {
+            setGenerating(false)
         }
     }
 
     const handleAction = async (id: string, action: string) => {
-        const res = await fetch("/api/hr/payroll", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, action })
-        })
+        try {
+            const res = await fetch("/api/hr/payroll", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, action })
+            })
 
-        if (res.ok) {
-            fetchPayrolls()
+            if (res.ok) {
+                fetchPayrolls()
+            }
+        } catch (error) {
+            console.error("Failed to update status", error)
         }
     }
 
     const totalPayroll = payrolls.reduce((sum, p) => sum + p.netSalary, 0)
     const pendingCount = payrolls.filter(p => p.status === 'PENDING').length
 
-    if (loading) return <div>Loading payroll...</div>
+    if (loading) return <div className="text-gray-600">Loading payroll...</div>
 
     return (
         <div className="space-y-6">
@@ -68,7 +84,7 @@ export default function PayrollTab() {
                 </div>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-ecwa-blue text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-900"
+                    className="bg-gradient-to-r from-[var(--color-ecwa-blue)] to-blue-700 text-white px-5 py-2.5 rounded-lg flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-medium"
                 >
                     <Plus size={20} className="mr-2" />
                     {showForm ? "Cancel" : "Generate Payroll"}
@@ -88,8 +104,8 @@ export default function PayrollTab() {
             </div>
 
             {showForm && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 className="text-lg font-semibold mb-4">Generate Payroll for Month</h3>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-in fade-in slide-in-from-top-4">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900">Generate Payroll for Month</h3>
                     <div className="flex gap-4 items-end">
                         <div className="flex-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Select Month</label>
@@ -97,18 +113,26 @@ export default function PayrollTab() {
                                 type="month"
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue bg-white text-gray-900"
                             />
                         </div>
-                        <button
+                        <Button
                             onClick={handleGenerate}
-                            className="bg-ecwa-blue text-white px-6 py-2 rounded-lg hover:bg-blue-900"
+                            disabled={generating}
+                            className="bg-ecwa-blue text-white px-6 py-2.5 rounded-lg hover:bg-blue-900 h-[42px]"
                         >
-                            Generate
-                        </button>
+                            {generating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                "Generate"
+                            )}
+                        </Button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">
-                        This will generate payroll for all active staff for the selected month.
+                        This will generate payroll for all active staff for the selected month based on their base salary.
                     </p>
                 </div>
             )}
@@ -137,7 +161,7 @@ export default function PayrollTab() {
                                 return (
                                     <tr key={payroll.id} className="border-b hover:bg-gray-50">
                                         <td className="p-4 text-sm font-medium text-gray-900">
-                                            {payroll.staff.user.name}
+                                            {payroll.staff?.user?.name || "Unknown"}
                                         </td>
                                         <td className="p-4 text-sm text-gray-600">
                                             {new Date(payroll.month).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
@@ -165,7 +189,7 @@ export default function PayrollTab() {
                                                 {payroll.status === 'PENDING' && (
                                                     <button
                                                         onClick={() => handleAction(payroll.id, 'approve')}
-                                                        className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                                        className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                                     >
                                                         Approve
                                                     </button>
@@ -173,13 +197,13 @@ export default function PayrollTab() {
                                                 {payroll.status === 'APPROVED' && (
                                                     <button
                                                         onClick={() => handleAction(payroll.id, 'pay')}
-                                                        className="text-xs px-3 py-1 bg-ecwa-blue text-white rounded hover:bg-blue-900"
+                                                        className="text-xs px-3 py-1 bg-ecwa-blue text-white rounded hover:bg-blue-900 transition-colors"
                                                     >
                                                         Mark Paid
                                                     </button>
                                                 )}
                                                 {payroll.status === 'PAID' && (
-                                                    <button className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                                    <button className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors">
                                                         <Download size={14} className="inline mr-1" />
                                                         Payslip
                                                     </button>

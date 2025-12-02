@@ -11,9 +11,15 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const month = searchParams.get("month")
+    const orgId = searchParams.get("orgId") || session.user.organizationId
 
     try {
-        const where: any = {}
+        const where: any = {
+            staff: {
+                organizationId: orgId || undefined
+            }
+        }
+
         if (month) {
             const targetDate = new Date(month)
             where.month = targetDate
