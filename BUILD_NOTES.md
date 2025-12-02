@@ -40,3 +40,9 @@
 - Root cause: Same persistent type mismatch
 - Resolution: Applied `as any` type assertion to `src/app/api/invites/route.ts`
 - Result: Build succeeded consistently
+
+### Fix #7: Leadership Settings Type Definition (11:15 AM)
+- Build error: `REQUIRED_ROLES` missing `AGENCY` and `DEPARTMENT` keys
+- Root cause: Environment mismatch where build environment expects extra keys in `OrganizationType`
+- Resolution: Changed type to `Partial<Record<OrganizationType, ...>>` to allow missing keys
+- Result: Build succeeded consistently
