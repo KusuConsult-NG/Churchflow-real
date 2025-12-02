@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, Building2, CreditCard } from "lucide-react"
+import { Plus, Building2, CreditCard, Loader2 } from "lucide-react"
 
 export default function AccountsTab() {
     const [accounts, setAccounts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState("")
     const [showForm, setShowForm] = useState(false)
     const [formData, setFormData] = useState({
         name: "",
@@ -22,28 +24,43 @@ export default function AccountsTab() {
         fetch("/api/finance/accounts")
             .then(res => res.json())
             .then(data => {
-                setAccounts(data)
+                if (Array.isArray(data)) {
+                    setAccounts(data)
+                }
                 setLoading(false)
             })
+            .catch(() => setLoading(false))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setError("")
+        setSubmitting(true)
 
-        const res = await fetch("/api/finance/accounts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData)
-        })
+        try {
+            const res = await fetch("/api/finance/accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            })
 
-        if (res.ok) {
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to create account")
+            }
+
             setShowForm(false)
             setFormData({ name: "", accountNumber: "", bankName: "", balance: "0" })
             fetchAccounts()
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setSubmitting(false)
         }
     }
 
-    if (loading) return <div>Loading accounts...</div>
+    if (loading) return <div className="text-gray-600">Loading accounts...</div>
 
     return (
         <div className="space-y-6">
@@ -54,7 +71,7 @@ export default function AccountsTab() {
                 </div>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-ecwa-blue text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-900"
+                    className="bg-gradient-to-r from-[var(--color-ecwa-blue)] to-blue-700 text-white px-5 py-2.5 rounded-lg flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-medium"
                 >
                     <Plus size={20} className="mr-2" />
                     {showForm ? "Cancel" : "New Account"}
@@ -63,17 +80,24 @@ export default function AccountsTab() {
 
             {showForm && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 className="text-lg font-semibold mb-4">Create New Account</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900">Create New Account</h3>
+
+                    {error && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name *</label>
                                 <input
                                     type="text"
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue text-gray-900 bg-white"
                                     placeholder="e.g. General Fund"
                                 />
                             </div>
@@ -83,7 +107,7 @@ export default function AccountsTab() {
                                     type="text"
                                     value={formData.bankName}
                                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue text-gray-900 bg-white"
                                     placeholder="e.g. Gowans Microfinance"
                                 />
                             </div>
@@ -93,7 +117,7 @@ export default function AccountsTab() {
                                     type="text"
                                     value={formData.accountNumber}
                                     onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue text-gray-900 bg-white"
                                     placeholder="0000000000"
                                 />
                             </div>
@@ -103,15 +127,23 @@ export default function AccountsTab() {
                                     type="number"
                                     value={formData.balance}
                                     onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue text-gray-900 bg-white"
                                 />
                             </div>
                         </div>
                         <button
                             type="submit"
-                            className="bg-ecwa-blue text-white px-6 py-2 rounded-lg hover:bg-blue-900"
+                            disabled={submitting}
+                            className="bg-gradient-to-r from-[var(--color-ecwa-blue)] to-blue-700 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
                         >
-                            Create Account
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Creating Account...
+                                </>
+                            ) : (
+                                "Create Account"
+                            )}
                         </button>
                     </form>
                 </div>
