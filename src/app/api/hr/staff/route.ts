@@ -36,17 +36,49 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { userId, departmentId, staffId, hireDate, contractType, baseSalary, bankName, accountNumber } = body
+        const {
+            name, email, position,
+            staffId, hireDate, contractType, baseSalary,
+            bankName, accountNumber
+        } = body
 
         if (!session.user.organizationId) {
             return NextResponse.json({ error: "User not linked to organization" }, { status: 400 })
         }
 
+        // Check if user with this email already exists
+        let user = await prisma.user.findUnique({
+            where: { email }
+        })
+
+        // If user doesn't exist, create one
+        if (!user) {
+            // Generate a temporary password (staff should reset it on first login)
+            const bcrypt = require('bcryptjs')
+            const tempPassword = Math.random().toString(36).slice(-8) + 'A1!' // Temporary password
+            const hashedPassword = await bcrypt.hash(tempPassword, 10)
+
+            user = await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword,
+                    position,
+                    organizationId: session.user.organizationId,
+                    role: "USER"
+                }
+            })
+
+            // TODO: Send email to user with temporary password
+            console.log(`Created user ${email} with temp password: ${tempPassword}`)
+        }
+
+        // Create staff record linked to user
         const staff = await prisma.staff.create({
             data: {
-                userId,
+                userId: user.id,
                 organizationId: session.user.organizationId,
-                departmentId: departmentId || null,
+                departmentId: null,
                 staffId,
                 hireDate: new Date(hireDate),
                 contractType,
@@ -55,12 +87,13 @@ export async function POST(req: Request) {
                 accountNumber
             },
             include: {
-                user: { select: { name: true, email: true } }
+                user: { select: { name: true, email: true, position: true } }
             }
         })
 
         return NextResponse.json(staff)
     } catch (error: any) {
+        console.error("Staff creation error:", error)
         return NextResponse.json({ error: error.message || "Failed to create staff" }, { status: 500 })
     }
 }
