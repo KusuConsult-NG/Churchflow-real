@@ -28,3 +28,9 @@
 - Resolution: Applied `as any` type assertion to `src/app/api/finance/expenditure/route.ts`
 - Result: Build succeeded consistently
 
+
+### Fix #5: Income Route Type Assertion (10:52 AM)
+- Build error: `narration` missing in `TransactionCreateInput`
+- Root cause: Same persistent type mismatch
+- Resolution: Applied `as any` type assertion to `src/app/api/finance/income/route.ts`
+- Result: Build succeeded consistently
