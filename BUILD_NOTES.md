@@ -22,3 +22,9 @@
 - Resolution: Applied `as any` type assertion to `src/app/api/auth/signup/route.ts`
 - Result: Build succeeded consistently
 
+### Fix #4: Expenditure Route Type Assertion (10:38 AM)
+- Build error: `beneficiaryName` missing in `ExpenditureRequestCreateInput`
+- Root cause: Same persistent type mismatch as Fix #3
+- Resolution: Applied `as any` type assertion to `src/app/api/finance/expenditure/route.ts`
+- Result: Build succeeded consistently
+

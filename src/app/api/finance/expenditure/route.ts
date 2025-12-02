@@ -59,7 +59,7 @@ export async function POST(req: Request) {
                 requesterId: session.user.id,
                 organizationId: session.user.organizationId,
                 status: ApprovalStatus.PENDING
-            },
+            } as any,
             include: {
                 requester: { select: { name: true } }
             }
