@@ -73,7 +73,7 @@ export default function SignupPage() {
                 throw new Error(data.error || "Signup failed")
             }
 
-            router.push("/auth/signin?registered=true")
+            router.push("/welcome")
         } catch (err: any) {
             setError(err.message)
         } finally {
