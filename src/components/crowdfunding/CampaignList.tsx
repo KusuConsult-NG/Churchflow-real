@@ -100,9 +100,13 @@ export default function CampaignList() {
                                     ></div>
                                 </div>
 
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-ecwa-blue">₦{campaign.currentAmount.toLocaleString()}</span>
-                                    <span className="text-gray-500">{Math.round((campaign.currentAmount / campaign.goalAmount) * 100)}%</span>
+                                <div className="flex justify-between items-end text-sm">
+                                    <span className="font-bold text-ecwa-blue text-base truncate max-w-[70%]" title={`₦${campaign.currentAmount.toLocaleString()}`}>
+                                        ₦{campaign.currentAmount.toLocaleString()}
+                                    </span>
+                                    <span className="text-gray-500 font-medium whitespace-nowrap">
+                                        {Math.round((campaign.currentAmount / campaign.goalAmount) * 100)}%
+                                    </span>
                                 </div>
                             </div>
                         </div>

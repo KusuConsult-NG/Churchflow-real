@@ -25,7 +25,7 @@ export async function POST(req: Request) {
                 }
             })
 
-            const campaign = await tx.campaign.update({
+            const updatedCampaign = await tx.campaign.update({
                 where: { id: campaignId },
                 data: {
                     currentAmount: {
@@ -34,7 +34,16 @@ export async function POST(req: Request) {
                 }
             })
 
-            return { donation, campaign }
+            // Check if goal met
+            if (updatedCampaign.currentAmount >= updatedCampaign.goalAmount && updatedCampaign.status !== "COMPLETED") {
+                await tx.campaign.update({
+                    where: { id: campaignId },
+                    data: { status: "COMPLETED" }
+                })
+                updatedCampaign.status = "COMPLETED"
+            }
+
+            return { donation, campaign: updatedCampaign }
         })
 
         return NextResponse.json(result)
