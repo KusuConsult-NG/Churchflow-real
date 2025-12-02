@@ -9,8 +9,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(req.url)
+    const orgId = searchParams.get("orgId") || session.user.organizationId
+
     try {
         const requests = await prisma.leaveRequest.findMany({
+            where: {
+                staff: {
+                    organizationId: orgId || undefined
+                }
+            },
             include: {
                 staff: {
                     include: {
@@ -36,6 +44,22 @@ export async function POST(req: Request) {
     try {
         const body = await req.json()
         const { staffId, type, startDate, endDate, reason } = body
+
+        if (!session.user.organizationId) {
+            return NextResponse.json({ error: "User not linked to organization" }, { status: 400 })
+        }
+
+        // Verify staff belongs to organization
+        const staff = await prisma.staff.findFirst({
+            where: {
+                id: staffId,
+                organizationId: session.user.organizationId
+            }
+        })
+
+        if (!staff) {
+            return NextResponse.json({ error: "Staff member not found in your organization" }, { status: 404 })
+        }
 
         const request = await prisma.leaveRequest.create({
             data: {
