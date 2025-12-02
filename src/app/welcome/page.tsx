@@ -50,7 +50,7 @@ export default function WelcomePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-3xl mx-auto">
                     {/* Create Organization Card */}
                     <Link
-                        href="/dashboard/organizations/create"
+                        href="/create-organization"
                         className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center justify-center text-center w-full min-h-[280px]"
                     >
                         <div className="bg-white/10 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform">
