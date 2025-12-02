@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -36,9 +36,23 @@ export default function SignupPage() {
         address: "",
         churchName: "",
         lcc: "",
+        pendingOrganizationId: "", // Organization user wants to join
         password: "",
         confirmPassword: ""
     })
+    const [organizations, setOrganizations] = useState<any[]>([])
+
+    useEffect(() => {
+        // Fetch organizations for dropdown
+        fetch("/api/organizations/list")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setOrganizations(data)
+                }
+            })
+            .catch(err => console.error("Failed to load organizations"))
+    }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -63,6 +77,7 @@ export default function SignupPage() {
                     address: formData.address,
                     churchName: formData.churchName,
                     lcc: formData.lcc,
+                    pendingOrganizationId: formData.pendingOrganizationId || null,
                     password: formData.password
                 })
             })
@@ -73,7 +88,12 @@ export default function SignupPage() {
                 throw new Error(data.error || "Signup failed")
             }
 
-            router.push("/welcome")
+            // If user selected an organization, show pending approval message
+            if (formData.pendingOrganizationId) {
+                router.push("/auth/signin?pending=true")
+            } else {
+                router.push("/welcome")
+            }
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -159,6 +179,28 @@ export default function SignupPage() {
                                 className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <Label className="text-gray-700">Organization <span className="text-gray-400 font-normal">(Optional - Requires Approval)</span></Label>
+                        <Select
+                            value={formData.pendingOrganizationId}
+                            onValueChange={(val) => setFormData({ ...formData, pendingOrganizationId: val })}
+                        >
+                            <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                                <SelectValue placeholder="Select organization to join" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-gray-300">
+                                {organizations.map(org => (
+                                    <SelectItem key={org.id} value={org.id} className="text-gray-900 cursor-pointer hover:bg-gray-100">
+                                        {org.name} ({org.type}) {org.code && `- ${org.code}`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Select if you want to join an existing organization. Admin approval required.
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

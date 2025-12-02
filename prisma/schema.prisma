@@ -142,8 +142,10 @@ model User {
   role     UserRole @default(USER)
 
   // Organization Link
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId        String?
+  organization          Organization? @relation(fields: [organizationId], references: [id])
+  pendingOrganizationId String? // Organization user wants to join (pending approval)
+  isApproved            Boolean       @default(false) // Whether user is approved by admin
 
   // Agency Link
   agencyId String?
