@@ -28,22 +28,22 @@ export default function LandingPage() {
           </p>
           <div className="flex gap-4">
             <Link href="/auth/signin">
-                <Button className="bg-white text-[var(--color-ecwa-blue)] hover:bg-blue-50">
-                    Login
-                </Button>
+              <Button className="bg-white text-[var(--color-ecwa-blue)] hover:bg-blue-50">
+                Login
+              </Button>
             </Link>
             <Link href="/auth/signup">
-                <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                    Sign Up
-                </Button>
+              <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                Sign Up
+              </Button>
             </Link>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="mt-16 text-blue-200 text-sm">
         © {new Date().getFullYear()} ECWA ChurchFlow. All rights reserved.
       </div>
-    </div >
+    </div>
   )
 }
