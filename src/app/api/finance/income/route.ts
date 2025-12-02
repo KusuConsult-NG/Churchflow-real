@@ -56,7 +56,7 @@ export async function POST(req: Request) {
                     paymentMethod: paymentMethod as PaymentMethod,
                     reference,
                     date: date ? new Date(date) : new Date()
-                }
+                } as any
             })
 
             // Update account balance
