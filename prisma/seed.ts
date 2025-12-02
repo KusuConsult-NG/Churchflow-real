@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, OrganizationType } from '@prisma/client'
+import { PrismaClient, OrganizationType, UserRole } from '@prisma/client'
 import { hash } from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -16,8 +16,6 @@ async function main() {
             email: 'hq@ecwa.org'
         }
     })
-
-    console.log({ hq })
 
     // Create Super Admin User
     const password = await hash('admin123', 12)

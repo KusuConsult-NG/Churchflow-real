@@ -66,49 +66,60 @@ export async function POST(req: Request) {
         if (orgType === "HQ") role = "SUPER_ADMIN"
         if (orgType === "LC") role = "SENIOR_MINISTER"
 
-        // Create Organization only
-        const org = await prisma.organization.create({
+        const { name, type, code, email, phone, address, parentId, adminName, adminEmail } = body
+
+        // Validate parent
+        const parentOrg = await prisma.organization.findUnique({
+            where: { id: parentId }
+        })
+
+        if (!parentOrg) {
+            return NextResponse.json({ error: "Parent organization not found" }, { status: 404 })
+        }
+
+        // Validate hierarchy (Basic check, UI does strict check)
+        // HQ -> GCC/DCC, GCC -> DCC, DCC -> LCC, LCC -> LC
+
+        // Create Organization
+        const organization = await prisma.organization.create({
             data: {
-                name: orgName,
-                type: orgType,
-                code: orgCode,
-                address: orgAddress,
-                email: orgEmail,
-                parentId: parentId || null
+                name,
+                type: type as OrganizationType,
+                code,
+                email,
+                phone,
+                address,
+                parentId
             }
         })
 
-        // Send invite to admin
-        const inviteResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/invites`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+        // Create Invite for Admin
+        const token = generateInviteToken()
+        const expiresAt = new Date()
+        expiresAt.setHours(expiresAt.getHours() + 48) // 48 hours
+
+        await prisma.inviteToken.create({
+            data: {
+                token,
                 email: adminEmail,
                 name: adminName,
-                organizationId: org.id,
-                organizationName: orgName,
-                role
-            })
+                organizationId: organization.id,
+                role: "ADMIN", // Default role for new org admin
+                expiresAt
+            }
         })
 
-        if (!inviteResponse.ok) {
-            // If invite fails, we could optionally delete the org
-            // For now, just return error but keep org
-            const error = await inviteResponse.json()
-            return NextResponse.json({
-                org,
-                warning: "Organization created but invite failed to send",
-                error: error.error
-            }, { status: 207 }) // 207 Multi-Status
-        }
+        // Send Email
+        await sendInviteEmail(adminEmail, adminName, token, organization.name)
 
         return NextResponse.json({
             success: true,
-            org,
-            message: `Organization created successfully. Invite sent to ${adminEmail}`
+            organization,
+            message: "Organization created and admin invited"
         })
+
     } catch (error: any) {
-        console.error("Org Creation Error:", error)
+        console.error("Create Org Error:", error)
         return NextResponse.json({ error: error.message || "Failed to create organization" }, { status: 500 })
     }
 }

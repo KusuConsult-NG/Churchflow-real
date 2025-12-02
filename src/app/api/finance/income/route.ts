@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { accountId, amount, source, category, description, paymentMethod, reference, date } = body
+        const { accountId, amount, source, category, description, narration, paymentMethod, reference, date } = body
 
         // Create transaction and update account balance
         const result = await prisma.$transaction(async (tx) => {
@@ -52,6 +52,7 @@ export async function POST(req: Request) {
                     source: source || "Anonymous",
                     category,
                     description,
+                    narration, // Add narration
                     paymentMethod: paymentMethod as PaymentMethod,
                     reference,
                     date: date ? new Date(date) : new Date()

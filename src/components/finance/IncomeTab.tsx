@@ -26,6 +26,7 @@ export default function IncomeTab() {
         source: "",
         category: "Tithe",
         description: "",
+        narration: "",
         paymentMethod: "CASH",
         reference: "",
         date: new Date().toISOString().split('T')[0]
@@ -71,6 +72,7 @@ export default function IncomeTab() {
                 source: "",
                 category: "Tithe",
                 description: "",
+                narration: "",
                 paymentMethod: "CASH",
                 reference: "",
                 date: new Date().toISOString().split('T')[0]
@@ -188,12 +190,13 @@ export default function IncomeTab() {
                                 />
                             </div>
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description/Narration</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Narration</label>
                                 <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    value={formData.narration}
+                                    onChange={(e) => setFormData({ ...formData, narration: e.target.value })}
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
                                     rows={2}
+                                    placeholder="e.g., Special offering for building project"
                                 />
                             </div>
                         </div>

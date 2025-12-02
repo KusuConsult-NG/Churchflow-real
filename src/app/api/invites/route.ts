@@ -43,7 +43,10 @@ export async function POST(req: Request) {
                 email,
                 name,
                 organizationId,
+                name,
+                organizationId,
                 role,
+                position: body.position, // Add position if provided
                 expiresAt
             }
         })

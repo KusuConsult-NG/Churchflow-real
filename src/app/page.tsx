@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Building2, LogIn } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
   return (
@@ -16,35 +17,33 @@ export default function LandingPage() {
         {/* Login Card */}
         <Link
           href="/auth/signin"
-          className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center text-center"
+          className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center text-center mx-auto max-w-md w-full"
         >
           <div className="bg-white/10 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform">
             <LogIn size={48} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Login</h2>
-          <p className="text-blue-100">
+          <p className="text-blue-100 mb-6">
             Access your dashboard, manage finances, and view reports.
           </p>
-        </Link>
-
-        {/* Create Organization Card */}
-        <Link
-          href="/create-organization"
-          className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center text-center"
-        >
-          <div className="bg-white/10 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform">
-            <Building2 size={48} className="text-white" />
+          <div className="flex gap-4">
+            <Link href="/auth/signin">
+                <Button className="bg-white text-[var(--color-ecwa-blue)] hover:bg-blue-50">
+                    Login
+                </Button>
+            </Link>
+            <Link href="/auth/signup">
+                <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                    Sign Up
+                </Button>
+            </Link>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Create Organization</h2>
-          <p className="text-blue-100">
-            Register a new LC, LCC, DCC, or GCC and set up your team.
-          </p>
-        </Link>
+        </div>
       </div>
 
       <div className="mt-16 text-blue-200 text-sm">
         © {new Date().getFullYear()} ECWA ChurchFlow. All rights reserved.
       </div>
-    </div>
+    </div >
   )
 }
