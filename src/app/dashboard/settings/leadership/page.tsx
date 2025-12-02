@@ -7,7 +7,7 @@ import { OrganizationType } from "@prisma/client"
 import { LeadershipList } from "./list"
 
 // Define required roles per org type
-const REQUIRED_ROLES: Record<OrganizationType, { role: string, label: string }[]> = {
+const REQUIRED_ROLES: Partial<Record<OrganizationType, { role: string, label: string }[]>> = {
     HQ: [
         { role: "PRESIDENT", label: "ECWA President" },
         { role: "VICE_PRESIDENT", label: "Vice President" },
