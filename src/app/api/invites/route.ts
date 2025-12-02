@@ -46,7 +46,7 @@ export async function POST(req: Request) {
                 role,
                 position: body.position, // Add position if provided
                 expiresAt
-            }
+            } as any
         })
 
         // Send email (currently logs to console)
