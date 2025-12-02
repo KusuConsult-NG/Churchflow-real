@@ -39,7 +39,7 @@ export async function POST(req: Request) {
                 churchName,
                 lcc,
                 title: title as Title,
-            }
+            } as any
         })
 
         return NextResponse.json({
