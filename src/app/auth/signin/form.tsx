@@ -15,6 +15,7 @@ export default function SignInForm() {
 
     const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
     const urlError = searchParams.get("error")
+    const pending = searchParams.get("pending") === "true"
 
     useEffect(() => {
         if (urlError === "CredentialsSignin") {
@@ -56,6 +57,13 @@ export default function SignInForm() {
                     <h1 className="text-3xl font-bold text-ecwa-blue">ChurchFlow</h1>
                     <p className="text-gray-600 mt-2">Sign in to your account</p>
                 </div>
+
+                {pending && (
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-4 text-sm">
+                        <p className="font-semibold mb-1">✅ Account Created Successfully!</p>
+                        <p>Your request to join the organization is pending admin approval. You'll be notified once approved.</p>
+                    </div>
+                )}
 
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">

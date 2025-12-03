@@ -19,6 +19,12 @@ export default function WelcomePage() {
             return
         }
 
+        // If user has pending organization, show pending message
+        if (session.user.pendingOrganizationId && !session.user.organizationId) {
+            // User is waiting for approval - stay on this page with message
+            return
+        }
+
         // If user already has an organization, redirect to dashboard
         if (session.user.organizationId) {
             router.push("/dashboard")
@@ -29,6 +35,29 @@ export default function WelcomePage() {
         return (
             <div className="min-h-screen bg-gradient-to-b from-ecwa-blue to-blue-900 flex items-center justify-center">
                 <div className="text-white text-xl">Loading...</div>
+            </div>
+        )
+    }
+
+    // If user is pending approval
+    if (session.user.pendingOrganizationId && !session.user.organizationId) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-ecwa-blue to-blue-900 flex flex-col items-center justify-center p-4 sm:p-8">
+                <div className="w-full max-w-2xl mx-auto text-center">
+                    <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-12 rounded-2xl">
+                        <div className="text-6xl mb-6">⏳</div>
+                        <h1 className="text-4xl font-bold text-white mb-4">
+                            Pending Approval
+                        </h1>
+                        <p className="text-xl text-blue-100 mb-6">
+                            Hi {session.user.name}, your request to join an organization is pending admin approval.
+                        </p>
+                        <p className="text-blue-200">
+                            You'll receive access to the dashboard once an administrator approves your request.
+                            Please check back later or contact your organization's admin.
+                        </p>
+                    </div>
+                </div>
             </div>
         )
     }

@@ -6,7 +6,7 @@ import { Title } from "@prisma/client"
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { email, password, name, phone, title, address, churchName, lcc } = body
+        const { email, password, name, phone, title, address, churchName, lcc, pendingOrganizationId } = body
 
         if (!email || !password || !name) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -21,14 +21,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "User already exists" }, { status: 400 })
         }
 
+        // Validate organization if provided
+        if (pendingOrganizationId) {
+            const organization = await prisma.organization.findUnique({
+                where: { id: pendingOrganizationId }
+            })
+
+            if (!organization) {
+                return NextResponse.json({ error: "Invalid organization selected" }, { status: 400 })
+            }
+        }
+
         // Hash password
         const hashedPassword = await hash(password, 12)
 
-        // Create user
-        // Note: churchName and lcc are currently not in the User model. 
-        // We might need to add them or store them in a metadata field if required.
-        // For now, we'll store what we can.
-
+        // Create user with pending organization
         const user = await prisma.user.create({
             data: {
                 email,
@@ -39,6 +46,8 @@ export async function POST(req: Request) {
                 churchName,
                 lcc,
                 title: title as Title,
+                pendingOrganizationId: pendingOrganizationId || null,
+                isApproved: false // User needs admin approval if they selected an org
             } as any
         })
 
@@ -48,7 +57,8 @@ export async function POST(req: Request) {
                 id: user.id,
                 email: user.email,
                 name: user.name
-            }
+            },
+            pendingApproval: !!pendingOrganizationId
         })
 
     } catch (error: any) {

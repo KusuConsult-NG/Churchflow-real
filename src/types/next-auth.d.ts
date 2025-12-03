@@ -8,6 +8,7 @@ declare module "next-auth" {
             role: UserRole
             organizationId: string | null
             organizationType: OrganizationType | undefined
+            pendingOrganizationId: string | null
         } & DefaultSession["user"]
     }
 
@@ -15,6 +16,7 @@ declare module "next-auth" {
         role: UserRole
         organizationId: string | null
         organizationType: OrganizationType | undefined
+        pendingOrganizationId: string | null
     }
 }
 
@@ -24,5 +26,6 @@ declare module "next-auth/jwt" {
         role: UserRole
         organizationId: string | null
         organizationType: OrganizationType | undefined
+        pendingOrganizationId: string | null
     }
 }

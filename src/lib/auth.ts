@@ -54,7 +54,8 @@ export const authOptions: NextAuthOptions = {
                     name: user.name,
                     role: user.role,
                     organizationId: user.organizationId,
-                    organizationType: user.organization?.type
+                    organizationType: user.organization?.type,
+                    pendingOrganizationId: user.pendingOrganizationId
                 }
             }
         })
@@ -68,7 +69,8 @@ export const authOptions: NextAuthOptions = {
                     id: token.id,
                     role: token.role,
                     organizationId: token.organizationId,
-                    organizationType: token.organizationType
+                    organizationType: token.organizationType,
+                    pendingOrganizationId: token.pendingOrganizationId
                 }
             }
         },
@@ -85,7 +87,8 @@ export const authOptions: NextAuthOptions = {
                         ...token,
                         organizationId: freshUser.organizationId,
                         role: freshUser.role,
-                        organizationType: freshUser.organization?.type
+                        organizationType: freshUser.organization?.type,
+                        pendingOrganizationId: freshUser.pendingOrganizationId
                     }
                 }
             }
@@ -96,7 +99,8 @@ export const authOptions: NextAuthOptions = {
                     id: user.id,
                     role: (user as any).role,
                     organizationId: (user as any).organizationId,
-                    organizationType: (user as any).organizationType
+                    organizationType: (user as any).organizationType,
+                    pendingOrganizationId: (user as any).pendingOrganizationId
                 }
             }
             return token

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-// Get list of all organizations for signup dropdown
+// Public endpoint - no auth required for signup
 export async function GET() {
     try {
         const organizations = await prisma.organization.findMany({
@@ -18,6 +18,7 @@ export async function GET() {
 
         return NextResponse.json(organizations)
     } catch (error) {
+        console.error("Failed to fetch organizations:", error)
         return NextResponse.json({ error: "Failed to fetch organizations" }, { status: 500 })
     }
 }

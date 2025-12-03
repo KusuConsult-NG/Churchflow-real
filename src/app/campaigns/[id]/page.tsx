@@ -141,9 +141,13 @@ export default function CampaignPage() {
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8 border-t-4 border-ecwa-blue">
                         <div className="mb-6">
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-3xl font-bold text-gray-900">₦{campaign.currentAmount.toLocaleString()}</span>
-                                <span className="text-gray-500 mb-1">raised of ₦{campaign.goalAmount.toLocaleString()}</span>
+                            <div className="flex flex-col mb-2 gap-1">
+                                <span className="text-3xl font-bold text-gray-900 break-words">
+                                    ₦{campaign.currentAmount.toLocaleString()}
+                                </span>
+                                <span className="text-gray-500 text-sm">
+                                    raised of <span className="font-medium">₦{campaign.goalAmount.toLocaleString()}</span>
+                                </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-3">
                                 <div
