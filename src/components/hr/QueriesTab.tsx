@@ -28,10 +28,31 @@ export default function QueriesTab() {
         description: ""
     })
 
+    const [organizations, setOrganizations] = useState<any[]>([])
+    const [selectedOrg, setSelectedOrg] = useState<string>("")
+
     useEffect(() => {
         fetchQueries()
-        fetchStaff()
+        fetchOrganizations()
     }, [])
+
+    useEffect(() => {
+        if (selectedOrg) {
+            fetchStaff(selectedOrg)
+        } else {
+            fetchStaff()
+        }
+    }, [selectedOrg])
+
+    const fetchOrganizations = () => {
+        fetch("/api/organizations/list")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setOrganizations(data)
+                }
+            })
+    }
 
     const fetchQueries = () => {
         fetch("/api/hr/queries")
@@ -45,12 +66,15 @@ export default function QueriesTab() {
             .catch(() => setLoading(false))
     }
 
-    const fetchStaff = () => {
-        fetch("/api/hr/staff")
+    const fetchStaff = (orgId?: string) => {
+        const url = orgId ? `/api/hr/staff?orgId=${orgId}` : "/api/hr/staff"
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
                     setStaffList(data)
+                } else {
+                    setStaffList([])
                 }
             })
     }
@@ -149,6 +173,25 @@ export default function QueriesTab() {
                                     {error}
                                 </div>
                             )}
+
+                            <div>
+                                <Label className="text-gray-700">Organization (Optional)</Label>
+                                <Select
+                                    value={selectedOrg}
+                                    onValueChange={setSelectedOrg}
+                                >
+                                    <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                                        <SelectValue placeholder="Filter by organization" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border-gray-300">
+                                        {organizations.map(org => (
+                                            <SelectItem key={org.id} value={org.id} className="text-gray-900 cursor-pointer hover:bg-gray-100">
+                                                {org.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
                             <div>
                                 <Label className="text-gray-700">Staff Member *</Label>

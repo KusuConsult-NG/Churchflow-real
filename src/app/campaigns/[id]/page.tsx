@@ -13,8 +13,10 @@ export default function CampaignPage() {
     const [donationAmount, setDonationAmount] = useState("")
     const [donorName, setDonorName] = useState("")
     const [donorEmail, setDonorEmail] = useState("")
+    const [paymentMethod, setPaymentMethod] = useState("PAYSTACK")
     const [isDonating, setIsDonating] = useState(false)
     const [success, setSuccess] = useState(false)
+    const [paymentReference, setPaymentReference] = useState("")
 
     useEffect(() => {
         // Fetch Campaign Details
@@ -29,10 +31,14 @@ export default function CampaignPage() {
                 setLoading(false)
             })
 
-        // Fetch Donations
+        // Fetch Donations - only show COMPLETED
         fetch(`/api/crowdfunding/donations?campaignId=${params.id}`)
             .then(res => res.json())
-            .then(data => setDonations(data))
+            .then(data => {
+                // Filter only completed donations
+                const completed = data.filter((d: any) => d.status === "COMPLETED")
+                setDonations(completed)
+            })
     }, [params.id])
 
     const handleDonate = async (e: React.FormEvent) => {
@@ -40,35 +46,60 @@ export default function CampaignPage() {
         setIsDonating(true)
 
         try {
+            // Create pending donation
             const res = await fetch("/api/crowdfunding/donations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     campaignId: params.id,
                     amount: donationAmount,
-                    donorName,
+                    donorName: donorName || "Anonymous",
                     donorEmail,
-                    paymentMethod: "ONLINE" // Simulated
+                    paymentMethod
                 })
             })
 
-            if (!res.ok) throw new Error("Donation failed")
+            const data = await res.json()
 
-            setSuccess(true)
-            // Refresh data
-            const updatedCampaign = { ...campaign, currentAmount: campaign.currentAmount + parseFloat(donationAmount) }
-            setCampaign(updatedCampaign)
+            if (!res.ok) throw new Error(data.error || "Donation failed")
 
-            const newDonation = {
-                id: Date.now().toString(),
-                amount: parseFloat(donationAmount),
-                donorName: donorName || "Anonymous",
-                createdAt: new Date().toISOString()
+            // Store payment reference
+            setPaymentReference(data.paymentReference)
+
+            // Simulate payment modal/redirect
+            // In real implementation, redirect to Paystack/Flutterwave
+            const confirmPayment = confirm(
+                `Payment Reference: ${data.paymentReference}\n\nIn a real implementation, you'd be redirected to ${paymentMethod} to complete payment.\n\nClick OK to simulate successful payment.`
+            )
+
+            if (confirmPayment) {
+                // Verify payment
+                const verifyRes = await fetch("/api/crowdfunding/donations/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentReference: data.paymentReference })
+                })
+
+                const verifyData = await verifyRes.json()
+
+                if (verifyRes.ok) {
+                    setSuccess(true)
+                    // Refresh data
+                    const updatedCampaign = verifyData.campaign
+                    setCampaign(updatedCampaign)
+
+                    // Add to donations list
+                    const newDonation = verifyData.donation
+                    setDonations([newDonation, ...donations])
+                } else {
+                    throw new Error(verifyData.error || "Payment verification failed")
+                }
+            } else {
+                alert("Payment cancelled. Your donation is pending payment completion.")
             }
-            setDonations([newDonation, ...donations])
 
-        } catch (error) {
-            alert("Failed to process donation")
+        } catch (error: any) {
+            alert(error.message || "Failed to process donation")
         } finally {
             setIsDonating(false)
         }
@@ -206,6 +237,24 @@ export default function CampaignPage() {
                                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
                                         placeholder="your@email.com"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                                    <select
+                                        value={paymentMethod}
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ecwa-blue focus:border-ecwa-blue"
+                                        required
+                                    >
+                                        <option value="PAYSTACK">Paystack</option>
+                                        <option value="FLUTTERWAVE">Flutterwave</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                        <option value="CASH">Cash</option>
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Select your preferred payment method
+                                    </p>
                                 </div>
 
                                 <button

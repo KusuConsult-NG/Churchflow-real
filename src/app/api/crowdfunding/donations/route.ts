@@ -4,50 +4,42 @@ import { prisma } from "@/lib/prisma"
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { campaignId, amount, donorName, donorEmail, message, paymentMethod, reference } = body
+        const { campaignId, amount, donorName, donorEmail, message, paymentMethod } = body
 
         if (!campaignId || !amount) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
         }
 
-        // Transaction to create donation and update campaign amount
-        const result = await prisma.$transaction(async (tx) => {
-            const donation = await tx.donation.create({
-                data: {
-                    campaignId,
-                    amount: parseFloat(amount),
-                    donorName: donorName || "Anonymous",
-                    donorEmail,
-                    message,
-                    paymentMethod: paymentMethod || "ONLINE",
-                    reference,
-                    status: "COMPLETED"
-                }
-            })
+        if (!paymentMethod) {
+            return NextResponse.json({ error: "Payment method is required" }, { status: 400 })
+        }
 
-            const updatedCampaign = await tx.campaign.update({
-                where: { id: campaignId },
-                data: {
-                    currentAmount: {
-                        increment: parseFloat(amount)
-                    }
-                }
-            })
+        // Generate a unique payment reference
+        const paymentReference = `DON-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-            // Check if goal met
-            if (updatedCampaign.currentAmount >= updatedCampaign.goalAmount && updatedCampaign.status !== "COMPLETED") {
-                await tx.campaign.update({
-                    where: { id: campaignId },
-                    data: { status: "COMPLETED" }
-                })
-                updatedCampaign.status = "COMPLETED"
+        // Create donation with PENDING status
+        // DO NOT update campaign amount yet - only after payment verification
+        const donation = await prisma.donation.create({
+            data: {
+                campaignId,
+                amount: parseFloat(amount),
+                donorName: donorName || "Anonymous",
+                donorEmail,
+                message,
+                paymentMethod,
+                paymentReference,
+                status: "PENDING" // Will be updated to COMPLETED after payment verification
             }
-
-            return { donation, campaign: updatedCampaign }
         })
 
-        return NextResponse.json(result)
+        return NextResponse.json({
+            success: true,
+            donation,
+            paymentReference,
+            message: "Donation created. Please complete payment."
+        })
     } catch (error: any) {
+        console.error("Donation creation error:", error)
         return NextResponse.json({ error: error.message || "Failed to process donation" }, { status: 500 })
     }
 }

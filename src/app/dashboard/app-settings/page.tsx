@@ -1,6 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ProfileSettings from "@/components/settings/ProfileSettings"
 import SecuritySettings from "@/components/settings/SecuritySettings"
+import JoinOrganizationModal from "@/components/organizations/JoinOrganizationModal"
+import { Button } from "@/components/ui/button"
+
+// ... imports
 
 export default function SettingsPage() {
     return (
@@ -23,8 +27,23 @@ export default function SettingsPage() {
                     <SecuritySettings />
                 </TabsContent>
                 <TabsContent value="organization">
-                    <div className="p-4 bg-white rounded-lg border text-center text-gray-500">
-                        Organization settings are managed in the Organizations module.
+                    <div className="p-6 bg-white rounded-lg border space-y-4">
+                        <div className="text-center">
+                            <h3 className="text-lg font-medium text-gray-900">Organization Management</h3>
+                            <p className="text-gray-500 mt-1">
+                                You can request to join another organization here.
+                            </p>
+                        </div>
+
+                        <div className="flex justify-center mt-4">
+                            <JoinOrganizationModal
+                                trigger={
+                                    <Button variant="outline">
+                                        Join Another Organization
+                                    </Button>
+                                }
+                            />
+                        </div>
                     </div>
                 </TabsContent>
             </Tabs>

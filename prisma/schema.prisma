@@ -400,9 +400,9 @@ model Donation {
   campaignId String
   campaign   Campaign @relation(fields: [campaignId], references: [id])
 
-  paymentMethod PaymentMethod
-  reference     String?
-  status        String        @default("COMPLETED")
+  paymentMethod    String @default("CASH") // PAYSTACK, FLUTTERWAVE, CASH, BANK_TRANSFER
+  paymentReference String? @unique // Payment gateway reference
+  status           String @default("PENDING") // PENDING, COMPLETED, FAILED
 
   createdAt DateTime @default(now())
 }

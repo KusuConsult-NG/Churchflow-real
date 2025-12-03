@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { Building2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import JoinOrganizationModal from "@/components/organizations/JoinOrganizationModal"
 
 export default function WelcomePage() {
     const { data: session, status } = useSession()
@@ -94,19 +95,32 @@ export default function WelcomePage() {
                         </Button>
                     </Link>
 
+
+
                     {/* Join Organization Card */}
-                    <div className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center justify-center text-center w-full min-h-[280px]">
-                        <div className="bg-white/10 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform">
-                            <Users size={48} className="text-white" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-white mb-3">Join Organization</h2>
-                        <p className="text-blue-100 mb-6">
-                            Have an invite from your organization? Check your email for the invitation link.
-                        </p>
-                        <div className="text-sm text-blue-200 bg-white/5 p-3 rounded-lg">
-                            Ask your admin to send you an invite link
-                        </div>
-                    </div>
+                    <JoinOrganizationModal
+                        trigger={
+                            <button className="group bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl hover:bg-white/20 transition-all duration-300 flex flex-col items-center justify-center text-center w-full min-h-[280px]">
+                                <div className="bg-white/10 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform">
+                                    <Users size={48} className="text-white" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white mb-3">Join Organization</h2>
+                                <p className="text-blue-100 mb-6">
+                                    Find and join an existing organization. Your request will be sent to the admin.
+                                </p>
+                                <Button className="w-full bg-white text-[var(--color-ecwa-blue)] hover:bg-blue-50 font-semibold">
+                                    Join Existing Organization
+                                </Button>
+                            </button>
+                        }
+                    />
+                </div>
+
+                {/* Contact Admin Section */}
+                <div className="mt-8 text-center">
+                    <a href="mailto:admin@ecwa.org" className="text-blue-200 hover:text-white underline text-sm">
+                        Need help? Contact Administrator
+                    </a>
                 </div>
 
                 {/* Info Section */}
