@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         }
 
         // Verify user is requesting to join admin's organization
-        if (user.pendingOrganizationId !== session.user.organizationId) {
+        if ((user as any).pendingOrganizationId !== session.user.organizationId) {
             return NextResponse.json({ error: "Unauthorized - User not requesting your organization" }, { status: 403 })
         }
 
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
             await prisma.user.update({
                 where: { id: userId },
                 data: {
-                    organizationId: user.pendingOrganizationId,
+                    organizationId: (user as any).pendingOrganizationId,
                     pendingOrganizationId: null,
                     isApproved: true,
                     role: role || "USER" // Set role (default to USER)
