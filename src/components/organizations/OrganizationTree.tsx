@@ -10,6 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import AddOrganizationModal from "./AddOrganizationModal"
+import EditOrganizationModal from "./EditOrganizationModal"
 
 interface Organization {
     id: string
@@ -17,6 +18,9 @@ interface Organization {
     code: string | null
     type: string
     parentId: string | null
+    email?: string | null
+    phone?: string | null
+    address?: string | null
     _count?: {
         children: number
         staff: number
@@ -25,11 +29,15 @@ interface Organization {
     children?: Organization[]
 }
 
+// ... (previous imports)
+
 export default function OrganizationTree() {
     const [organizations, setOrganizations] = useState<Organization[]>([])
     const [loading, setLoading] = useState(true)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [selectedParent, setSelectedParent] = useState<Organization | null>(null)
+    const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
 
     useEffect(() => {
         fetchOrganizations()
@@ -52,12 +60,15 @@ export default function OrganizationTree() {
         const rootItems: Organization[] = []
         const lookup: { [key: string]: Organization } = {}
 
+        // First pass: create lookup and initialize children
         for (const item of items) {
             const itemId = item.id
-            const children = item.children || []
-            lookup[itemId] = { ...item, children }
+            // Ensure we preserve existing children if any, or init empty array
+            // The API returns flat list but we might process it differently
+            lookup[itemId] = { ...item, children: [] }
         }
 
+        // Second pass: link children to parents
         for (const item of items) {
             if (item.parentId) {
                 const parent = lookup[item.parentId]
@@ -82,25 +93,9 @@ export default function OrganizationTree() {
         setIsAddModalOpen(true)
     }
 
-    const handleEdit = async (org: Organization) => {
-        const newName = prompt("Enter new organization name:", org.name)
-        if (!newName || newName === org.name) return
-
-        try {
-            const res = await fetch("/api/organizations", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: org.id, name: newName })
-            })
-
-            if (res.ok) {
-                fetchOrganizations()
-            } else {
-                alert("Failed to update organization")
-            }
-        } catch (error) {
-            console.error("Update failed", error)
-        }
+    const handleEdit = (org: Organization) => {
+        setSelectedOrg(org)
+        setIsEditModalOpen(true)
     }
 
     const handleDelete = async (org: Organization) => {
@@ -120,6 +115,7 @@ export default function OrganizationTree() {
             }
         } catch (error) {
             console.error("Delete failed", error)
+            alert("An error occurred while deleting the organization")
         }
     }
 
@@ -159,6 +155,13 @@ export default function OrganizationTree() {
                 onClose={() => setIsAddModalOpen(false)}
                 onSuccess={fetchOrganizations}
                 parentOrg={selectedParent}
+            />
+
+            <EditOrganizationModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSuccess={fetchOrganizations}
+                organization={selectedOrg}
             />
         </div>
     )

@@ -72,7 +72,24 @@ export const authOptions: NextAuthOptions = {
                 }
             }
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
+            if (trigger === "update") {
+                // Re-fetch user to get latest organization data
+                const freshUser = await prisma.user.findUnique({
+                    where: { id: token.id as string },
+                    include: { organization: true }
+                })
+
+                if (freshUser) {
+                    return {
+                        ...token,
+                        organizationId: freshUser.organizationId,
+                        role: freshUser.role,
+                        organizationType: freshUser.organization?.type
+                    }
+                }
+            }
+
             if (user) {
                 return {
                     ...token,

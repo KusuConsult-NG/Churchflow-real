@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { OrganizationType } from "@prisma/client"
-import { randomBytes } from "crypto"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-
-// Helper functions
-function generateInviteToken() {
-    return randomBytes(32).toString("hex")
-}
-
-async function sendInviteEmail(email: string, name: string, token: string, orgName: string) {
-    // In a real app, use Resend, SendGrid, etc.
-    console.log(`[MOCK EMAIL] To: ${email}, Subject: Invite to ${orgName}, Link: /auth/signup?token=${token}`)
-}
+import { generateInviteToken, sendInviteEmail } from "@/lib/email"
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
@@ -53,6 +43,8 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Failed to fetch organizations" }, { status: 500 })
     }
 }
+
+// Helper functions removed - imported from @/lib/email
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions)
@@ -94,41 +86,46 @@ export async function POST(req: Request) {
             }
         }
 
-        // Create Organization
-        const organization = await prisma.organization.create({
-            data: {
-                name,
-                type: type as OrganizationType,
-                code,
-                email,
-                phone,
-                address,
-                parentId
-            }
-        })
-
-        // Create Invite for Admin
         const token = generateInviteToken()
         const expiresAt = new Date()
         expiresAt.setHours(expiresAt.getHours() + 48) // 48 hours
 
-        await prisma.inviteToken.create({
-            data: {
-                token,
-                email: adminEmail,
-                name: adminName,
-                organizationId: organization.id,
-                role: "ADMIN", // Default role for new org admin
-                expiresAt
-            }
+        // Use transaction to ensure both Org and Invite are created or neither
+        const result = await prisma.$transaction(async (tx) => {
+            // Create Organization
+            const organization = await tx.organization.create({
+                data: {
+                    name,
+                    type: type as OrganizationType,
+                    code,
+                    email,
+                    phone,
+                    address,
+                    parentId
+                }
+            })
+
+            // Create Invite for Admin
+            await tx.inviteToken.create({
+                data: {
+                    token,
+                    email: adminEmail,
+                    name: adminName,
+                    organizationId: organization.id,
+                    role: "ADMIN", // Default role for new org admin
+                    expiresAt
+                }
+            })
+
+            return organization
         })
 
-        // Send Email
-        await sendInviteEmail(adminEmail, adminName, token, organization.name)
+        // Send Email (outside transaction to avoid blocking DB)
+        await sendInviteEmail(adminEmail, adminName, token, result.name)
 
         return NextResponse.json({
             success: true,
-            organization,
+            organization: result,
             message: "Organization created and admin invited"
         })
 
@@ -136,7 +133,8 @@ export async function POST(req: Request) {
         console.error("Create Org Error:", error)
         // Handle Prisma unique constraint errors (e.g. code)
         if (error.code === 'P2002') {
-            return NextResponse.json({ error: "Organization code already exists" }, { status: 400 })
+            const target = error.meta?.target ? ` (${error.meta.target})` : ""
+            return NextResponse.json({ error: `Organization code or email already exists${target}` }, { status: 400 })
         }
         return NextResponse.json({ error: error.message || "Failed to create organization" }, { status: 500 })
     }
