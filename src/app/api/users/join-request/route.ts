@@ -41,7 +41,7 @@ export async function POST(req: Request) {
                 // If we don't, they stay in old org until approved for new one?
                 // The requirement says "create a join existing organization option for users to send request... admin should be notified... and should approve".
                 // Let's assume this sets pending. The approval logic (which I wrote earlier) moves pending to actual.
-            }
+            } as any
         })
 
         return NextResponse.json({ success: true })
