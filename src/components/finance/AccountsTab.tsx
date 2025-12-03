@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, Building2, CreditCard, Loader2 } from "lucide-react"
+import { Plus, Building2, CreditCard, Loader2, ArrowUpRight, ArrowDownLeft, PieChart } from "lucide-react"
 
 export default function AccountsTab() {
     const [accounts, setAccounts] = useState<any[]>([])
+    const [transactions, setTransactions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
@@ -18,7 +19,18 @@ export default function AccountsTab() {
 
     useEffect(() => {
         fetchAccounts()
+        fetchTransactions()
     }, [])
+
+    const fetchTransactions = () => {
+        fetch("/api/finance/transactions?limit=50")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setTransactions(data)
+                }
+            })
+    }
 
     const fetchAccounts = () => {
         fetch("/api/finance/accounts")
@@ -186,6 +198,116 @@ export default function AccountsTab() {
                     </div>
                 )}
             </div>
+
+            {/* Financial Summary & Transactions */}
+            {transactions.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                    {/* Summary Section */}
+                    <div className="lg:col-span-1 space-y-6">
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                            <PieChart className="mr-2" size={20} />
+                            Recent Activity Summary
+                        </h3>
+
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                    <div className="flex items-center">
+                                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                            <ArrowDownLeft className="text-green-600" size={16} />
+                                        </div>
+                                        <span className="text-gray-600 font-medium">Income</span>
+                                    </div>
+                                    <span className="text-green-700 font-bold">
+                                        ₦{transactions
+                                            .filter(t => t.type === 'INCOME')
+                                            .reduce((sum, t) => sum + t.amount, 0)
+                                            .toLocaleString()}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                                    <div className="flex items-center">
+                                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                                            <ArrowUpRight className="text-red-600" size={16} />
+                                        </div>
+                                        <span className="text-gray-600 font-medium">Expenditure</span>
+                                    </div>
+                                    <span className="text-red-700 font-bold">
+                                        ₦{transactions
+                                            .filter(t => t.type === 'EXPENSE')
+                                            .reduce((sum, t) => sum + t.amount, 0)
+                                            .toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Categories Summary (Simplified) */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-4">Top Categories</h4>
+                            <div className="space-y-3">
+                                {Object.entries(transactions.reduce((acc: any, t) => {
+                                    const cat = t.category || 'Uncategorized';
+                                    acc[cat] = (acc[cat] || 0) + 1;
+                                    return acc;
+                                }, {}))
+                                    .sort(([, a]: any, [, b]: any) => b - a)
+                                    .slice(0, 5)
+                                    .map(([category, count]: any) => (
+                                        <div key={category} className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-600">{category}</span>
+                                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{count} txns</span>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Transactions List */}
+                    <div className="lg:col-span-2">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h3>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-3 font-medium">Date</th>
+                                            <th className="px-6 py-3 font-medium">Description</th>
+                                            <th className="px-6 py-3 font-medium">Category</th>
+                                            <th className="px-6 py-3 font-medium text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {transactions.map((t) => (
+                                            <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4 text-gray-500">
+                                                    {new Date(t.date).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-gray-900">
+                                                    {t.description}
+                                                    <div className="text-xs text-gray-400 font-normal">{t.account?.name}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                        {t.category || 'Uncategorized'}
+                                                    </span>
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-bold ${t.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                                                    }`}>
+                                                    {t.type === 'INCOME' ? '+' : '-'}₦{t.amount.toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
+
     )
 }

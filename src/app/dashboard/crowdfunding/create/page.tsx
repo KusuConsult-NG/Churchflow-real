@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -13,8 +13,20 @@ export default function CreateCampaign() {
         description: "",
         goalAmount: "",
         startDate: new Date().toISOString().split('T')[0],
-        endDate: ""
+        endDate: "",
+        organizationId: ""
     })
+    const [organizations, setOrganizations] = useState<any[]>([])
+
+    useEffect(() => {
+        fetch("/api/organizations?hierarchy=true")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setOrganizations(data)
+                }
+            })
+    }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -49,6 +61,20 @@ export default function CreateCampaign() {
                 <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Campaign</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Organization</label>
+                        <select
+                            required
+                            value={formData.organizationId}
+                            onChange={(e) => setFormData({ ...formData, organizationId: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ecwa-blue focus:ring-ecwa-blue p-2 border"
+                        >
+                            <option value="">Select Organization</option>
+                            {organizations.map(org => (
+                                <option key={org.id} value={org.id}>{org.name}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Campaign Title</label>
                         <input

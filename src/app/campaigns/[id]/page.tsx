@@ -178,6 +178,9 @@ export default function CampaignPage() {
                                 </span>
                                 <span className="text-gray-500 text-sm">
                                     raised of <span className="font-medium">₦{campaign.goalAmount.toLocaleString()}</span>
+                                    <span className="ml-2 text-ecwa-blue font-bold">
+                                        ({Math.round((campaign.currentAmount / campaign.goalAmount) * 100)}%)
+                                    </span>
                                 </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-3">

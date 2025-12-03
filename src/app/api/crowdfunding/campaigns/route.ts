@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { title, description, goalAmount, startDate, endDate } = body
+        const { title, description, goalAmount, startDate, endDate, organizationId } = body
 
         if (!session.user.organizationId) {
             return NextResponse.json({ error: "User not linked to an organization" }, { status: 400 })
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
                 goalAmount: parseFloat(goalAmount),
                 startDate: new Date(startDate),
                 endDate: endDate ? new Date(endDate) : null,
-                organizationId: session.user.organizationId,
+                organizationId: organizationId || session.user.organizationId,
                 creatorId: session.user.id,
                 status: "ACTIVE"
             }
