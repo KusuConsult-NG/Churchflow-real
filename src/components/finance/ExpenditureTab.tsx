@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react"
+import { Plus, CheckCircle, XCircle, Clock, DollarSign, BarChart3 } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 const EXPENDITURE_CATEGORIES = [
@@ -117,6 +117,46 @@ export default function ExpenditureTab() {
                     <p className="text-3xl font-bold mt-2">₦{totalApproved.toLocaleString()}</p>
                 </div>
             </div>
+
+            {/* Expenditure Chart (Simple Bar Visualization) */}
+            {requests.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 className="text-lg font-semibold mb-6 flex items-center">
+                        <BarChart3 className="mr-2" size={20} />
+                        Expenditure by Category
+                    </h3>
+                    <div className="space-y-4">
+                        {EXPENDITURE_CATEGORIES.map(category => {
+                            const categoryTotal = requests
+                                .filter(r => r.category === category && r.status !== 'REJECTED')
+                                .reduce((sum, r) => sum + r.amount, 0)
+
+                            const totalAmount = requests
+                                .filter(r => r.status !== 'REJECTED')
+                                .reduce((sum, r) => sum + r.amount, 0)
+
+                            const percentage = totalAmount > 0 ? (categoryTotal / totalAmount) * 100 : 0
+
+                            if (categoryTotal === 0) return null
+
+                            return (
+                                <div key={category}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="font-medium text-gray-700">{category}</span>
+                                        <span className="text-gray-500">₦{categoryTotal.toLocaleString()} ({Math.round(percentage)}%)</span>
+                                    </div>
+                                    <div className="w-full bg-gray-100 rounded-full h-2.5">
+                                        <div
+                                            className="bg-ecwa-blue h-2.5 rounded-full transition-all duration-500"
+                                            style={{ width: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
 
             {showForm && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

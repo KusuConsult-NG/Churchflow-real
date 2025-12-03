@@ -4,13 +4,26 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
 export async function GET(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const orgId = searchParams.get("orgId")
     const status = searchParams.get("status")
 
     try {
         const where: any = {}
-        if (orgId) where.organizationId = orgId
+        if (orgId) {
+            where.organizationId = orgId
+        } else {
+            // If no orgId specified, fetch campaigns for user's current org OR created by user
+            // actually, standard behavior is usually current org. 
+            // Let's assume the user might have created it in a different org context or the context is missing.
+            // Let's try to be broader: campaigns in user's org.
+            where.organizationId = session.user.organizationId
+        }
         if (status) where.status = status
 
         const campaigns = await prisma.campaign.findMany({

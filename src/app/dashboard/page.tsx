@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Building2, UserPlus, Activity, Users, Heart } from "lucide-react"
+import { Building2, UserPlus, Activity, Users, Heart, Plus } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 
 export default async function DashboardPage() {
@@ -22,41 +22,63 @@ export default async function DashboardPage() {
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-[var(--color-ecwa-blue)] mb-4">Welcome to ChurchFlow, {user.name}</h1>
           <p className="text-gray-600 max-w-xl mx-auto">
-            You are currently not connected to any organization. To get started, you can join an existing church or department.
+            You are currently not connected to any organization. To get started, you can create a new organization or join an existing one.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-[var(--color-ecwa-blue)]">
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Create Organization */}
+          <a href="/create-organization" className="block group">
+            <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 hover:border-[var(--color-ecwa-blue)] group-hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="mx-auto bg-blue-100 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center group-hover:bg-[var(--color-ecwa-blue)] transition-colors">
+                  <Plus className="text-[var(--color-ecwa-blue)] w-8 h-8 group-hover:text-white transition-colors" />
+                </div>
+                <CardTitle>Create Organization</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-sm text-gray-500 mb-6">
+                  Start a new organization (LC, LCC, DCC) and invite your team.
+                </p>
+                <Button className="w-full bg-[var(--color-ecwa-blue)]">
+                  Get Started
+                </Button>
+              </CardContent>
+            </Card>
+          </a>
+
+          {/* Join Organization */}
+          <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 hover:border-[var(--color-ecwa-blue)] hover:-translate-y-1">
             <CardHeader className="text-center">
-              <div className="mx-auto bg-blue-100 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
-                <Building2 className="text-[var(--color-ecwa-blue)] w-8 h-8" />
+              <div className="mx-auto bg-purple-100 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
+                <Building2 className="text-purple-600 w-8 h-8" />
               </div>
-              <CardTitle>Join an Organization</CardTitle>
+              <CardTitle>Join Organization</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-sm text-gray-500 mb-6">
-                Have an invite code? Enter it here to join your Local Church (LC), LCC, or DCC.
+                Have an invite code? Enter it here to join your church.
               </p>
-              <Button className="w-full bg-[var(--color-ecwa-blue)]">
-                Enter Invite Code
+              <Button variant="outline" className="w-full border-purple-200 text-purple-700 hover:bg-purple-50">
+                Enter Code
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-[var(--color-ecwa-blue)]">
+          {/* Contact Admin */}
+          <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 hover:border-[var(--color-ecwa-blue)] hover:-translate-y-1">
             <CardHeader className="text-center">
               <div className="mx-auto bg-green-100 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
                 <UserPlus className="text-green-600 w-8 h-8" />
               </div>
-              <CardTitle>Contact Administrator</CardTitle>
+              <CardTitle>Contact Admin</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-sm text-gray-500 mb-6">
-                Don't have a code? Contact your church administrator or secretary to be added to the system.
+                Don't have a code? Contact your administrator.
               </p>
-              <Button variant="outline" className="w-full">
-                View Support Contacts
+              <Button variant="outline" className="w-full border-green-200 text-green-700 hover:bg-green-50">
+                Get Help
               </Button>
             </CardContent>
           </Card>
@@ -97,6 +119,15 @@ export default async function DashboardPage() {
       account: { organizationId: user.organizationId }
     }
   })
+
+  // Fetch Platform Activity Data (Real-time)
+  const platformStats = {
+    activeChurches: await prisma.organization.count(),
+    membersManaged: await prisma.user.count(),
+    donationsProcessed: await prisma.donation.aggregate({
+      _sum: { amount: true }
+    }).then(res => res._sum.amount || 0)
+  }
 
   return (
     <div className="p-8">
@@ -229,16 +260,16 @@ export default async function DashboardPage() {
         </a>
       </div>
 
-      {/* Platform Activity Summary (Moved from Landing Page) */}
+      {/* Platform Activity Summary */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Platform Activity</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Platform Activity (Real-time)</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-blue-50 border-blue-100">
             <CardContent className="p-6 flex flex-col items-center text-center">
               <div className="bg-blue-100 p-3 rounded-full mb-4">
                 <Activity className="text-blue-600" size={24} />
               </div>
-              <span className="text-3xl font-bold text-blue-900 mb-1">500+</span>
+              <span className="text-3xl font-bold text-blue-900 mb-1">{platformStats.activeChurches.toLocaleString()}</span>
               <span className="text-blue-700 text-sm">Active Churches</span>
             </CardContent>
           </Card>
@@ -248,7 +279,7 @@ export default async function DashboardPage() {
               <div className="bg-purple-100 p-3 rounded-full mb-4">
                 <Users className="text-purple-600" size={24} />
               </div>
-              <span className="text-3xl font-bold text-purple-900 mb-1">10k+</span>
+              <span className="text-3xl font-bold text-purple-900 mb-1">{platformStats.membersManaged.toLocaleString()}</span>
               <span className="text-purple-700 text-sm">Members Managed</span>
             </CardContent>
           </Card>
@@ -258,7 +289,7 @@ export default async function DashboardPage() {
               <div className="bg-pink-100 p-3 rounded-full mb-4">
                 <Heart className="text-pink-600" size={24} />
               </div>
-              <span className="text-3xl font-bold text-pink-900 mb-1">₦50M+</span>
+              <span className="text-3xl font-bold text-pink-900 mb-1">₦{platformStats.donationsProcessed.toLocaleString()}</span>
               <span className="text-pink-700 text-sm">Donations Processed</span>
             </CardContent>
           </Card>
