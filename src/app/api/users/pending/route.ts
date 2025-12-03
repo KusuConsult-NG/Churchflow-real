@@ -23,7 +23,7 @@ export async function GET() {
                 pendingOrganizationId: session.user.organizationId,
                 isApproved: false,
                 organizationId: null // Not yet approved
-            },
+            } as any,
             select: {
                 id: true,
                 name: true,
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
                     pendingOrganizationId: null,
                     isApproved: true,
                     role: role || "USER" // Set role (default to USER)
-                }
+                } as any
             })
 
             return NextResponse.json({
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
                 data: {
                     pendingOrganizationId: null,
                     isApproved: false
-                }
+                } as any
             })
 
             return NextResponse.json({
