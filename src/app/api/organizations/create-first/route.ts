@@ -24,6 +24,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
         }
 
+        // Check if organization code exists
+        if (code) {
+            const existingOrg = await prisma.organization.findUnique({
+                where: { code }
+            })
+
+            if (existingOrg) {
+                return NextResponse.json({
+                    error: "Organization code already exists. Please choose a different code."
+                }, { status: 400 })
+            }
+        }
+
         // Create Organization and link current user
         const organization = await prisma.organization.create({
             data: {
