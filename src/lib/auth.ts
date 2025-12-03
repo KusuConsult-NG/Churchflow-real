@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
                     role: user.role,
                     organizationId: user.organizationId,
                     organizationType: user.organization?.type,
-                    pendingOrganizationId: user.pendingOrganizationId
+                    pendingOrganizationId: (user as any).pendingOrganizationId
                 }
             }
         })
