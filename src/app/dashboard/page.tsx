@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Building2, UserPlus } from "lucide-react"
+import { Building2, UserPlus, Activity, Users, Heart } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 
 export default async function DashboardPage() {
@@ -227,6 +227,42 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </a>
+      </div>
+
+      {/* Platform Activity Summary (Moved from Landing Page) */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Platform Activity</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-blue-50 border-blue-100">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="bg-blue-100 p-3 rounded-full mb-4">
+                <Activity className="text-blue-600" size={24} />
+              </div>
+              <span className="text-3xl font-bold text-blue-900 mb-1">500+</span>
+              <span className="text-blue-700 text-sm">Active Churches</span>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-purple-50 border-purple-100">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="bg-purple-100 p-3 rounded-full mb-4">
+                <Users className="text-purple-600" size={24} />
+              </div>
+              <span className="text-3xl font-bold text-purple-900 mb-1">10k+</span>
+              <span className="text-purple-700 text-sm">Members Managed</span>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-pink-50 border-pink-100">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="bg-pink-100 p-3 rounded-full mb-4">
+                <Heart className="text-pink-600" size={24} />
+              </div>
+              <span className="text-3xl font-bold text-pink-900 mb-1">₦50M+</span>
+              <span className="text-pink-700 text-sm">Donations Processed</span>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -46,41 +46,14 @@ export default function LandingPage() {
             <p className="text-blue-100 mb-6">
               Register your organization or join an existing one today.
             </p>
-            <Button variant="outline" className="w-full border-white text-white hover:bg-white/10 font-semibold">
+            <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-semibold border border-blue-500">
               Create Account
             </Button>
           </Link>
         </div>
 
         {/* Impact Section */}
-        <div className="mt-16 w-full max-w-4xl mx-auto">
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
-            <h3 className="text-2xl font-bold text-white text-center mb-8">Platform Activity</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-500/20 p-3 rounded-full mb-4">
-                  <Activity className="text-blue-300" size={24} />
-                </div>
-                <span className="text-3xl font-bold text-white mb-1">500+</span>
-                <span className="text-blue-200 text-sm">Active Churches</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-purple-500/20 p-3 rounded-full mb-4">
-                  <Users className="text-purple-300" size={24} />
-                </div>
-                <span className="text-3xl font-bold text-white mb-1">10k+</span>
-                <span className="text-blue-200 text-sm">Members Managed</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-pink-500/20 p-3 rounded-full mb-4">
-                  <Heart className="text-pink-300" size={24} />
-                </div>
-                <span className="text-3xl font-bold text-white mb-1">₦50M+</span>
-                <span className="text-blue-200 text-sm">Donations Processed</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* Footer */}
         <div className="mt-16 text-center text-blue-200 text-sm">
