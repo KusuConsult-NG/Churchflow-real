@@ -88,7 +88,7 @@ export const authOptions: NextAuthOptions = {
                         organizationId: freshUser.organizationId,
                         role: freshUser.role,
                         organizationType: freshUser.organization?.type,
-                        pendingOrganizationId: freshUser.pendingOrganizationId
+                        pendingOrganizationId: (freshUser as any).pendingOrganizationId
                     }
                 }
             }
