@@ -29,7 +29,7 @@ export async function POST(req: Request) {
                 paymentMethod,
                 paymentReference,
                 status: "PENDING" // Will be updated to COMPLETED after payment verification
-            }
+            } as any
         })
 
         return NextResponse.json({

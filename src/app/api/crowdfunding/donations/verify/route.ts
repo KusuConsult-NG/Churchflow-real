@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
         // Find the donation
         const donation = await prisma.donation.findUnique({
-            where: { paymentReference },
+            where: { paymentReference } as any,
             include: { campaign: true }
         })
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         const result = await prisma.$transaction(async (tx) => {
             // Update donation status
             const updatedDonation = await tx.donation.update({
-                where: { paymentReference },
+                where: { paymentReference } as any,
                 data: { status: "COMPLETED" }
             })
 
