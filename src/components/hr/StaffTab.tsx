@@ -11,6 +11,7 @@ const CONTRACT_TYPES = ["Permanent", "Temporary", "Contract", "Volunteer"]
 
 export default function StaffTab() {
     const [staff, setStaff] = useState<any[]>([])
+    const [organizations, setOrganizations] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [submitting, setSubmitting] = useState(false)
@@ -24,12 +25,25 @@ export default function StaffTab() {
         baseSalary: "",
         hireDate: new Date().toISOString().split('T')[0],
         bankName: "",
-        accountNumber: ""
+        accountNumber: "",
+        organizationId: ""
     })
 
     useEffect(() => {
         fetchStaff()
+        fetchOrganizations()
     }, [])
+
+    const fetchOrganizations = () => {
+        fetch("/api/organizations?hierarchy=true")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setOrganizations(data)
+                }
+            })
+            .catch(err => console.error("Failed to load organizations"))
+    }
 
     const fetchStaff = () => {
         fetch("/api/hr/staff")
@@ -71,7 +85,8 @@ export default function StaffTab() {
                 baseSalary: "",
                 hireDate: new Date().toISOString().split('T')[0],
                 bankName: "",
-                accountNumber: ""
+                accountNumber: "",
+                organizationId: ""
             })
             fetchStaff()
         } catch (err: any) {
@@ -231,6 +246,24 @@ export default function StaffTab() {
                                         className="bg-white border-gray-300 text-gray-900"
                                         placeholder="0123456789"
                                     />
+                                </div>
+                                <div>
+                                    <Label className="text-gray-700">Organization</Label>
+                                    <Select
+                                        value={formData.organizationId}
+                                        onValueChange={(val) => setFormData({ ...formData, organizationId: val })}
+                                    >
+                                        <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                                            <SelectValue placeholder="Select organization" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border-gray-300">
+                                            {organizations.map(org => (
+                                                <SelectItem key={org.id} value={org.id} className="text-gray-900 cursor-pointer hover:bg-gray-100">
+                                                    {org.name} ({org.type})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
